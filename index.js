@@ -126,6 +126,16 @@ app.get('/foo', function (req, res) {
   request.get(options).pipe(res);
 });
 
+app.get('/tracks', function (req, res) {
+  var access_token = req.query.access_token;
+  var options = {
+        url: 'https://api.spotify.com/v1/me/tracks',
+        headers: { 'Authorization': 'Bearer ' + access_token },
+        json: true
+    };
+  request.get(options).pipe(res);
+});
+
 var port = process.env.PORT || 8080;
 console.log('Listening on port ', port);
 app.listen(port);
