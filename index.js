@@ -7,7 +7,7 @@ var async = require('async');
 
 var client_id = process.env.CLIENT_ID; // Your client id
 var client_secret = process.env.CLIENT_SECRET; // Your client secret
-var redirect_uri = 'http:///localhost:8080/callback'; // Your redirect uri
+var redirect_uri = 'http://localhost:8080/callback'; // Your redirect uri
 
 var app = express();
 app.use(cors());
@@ -113,144 +113,17 @@ app.get('/callback', function(req, res) {
 });
 
 app.get('/', function (req, res) {
-    res.send('welcome to the backend');
+    res.send('you\'ve arrived at the auth server');
 });
 
-function unique (arr) {
-    return arr.filter(function (elem, pos) {
-       return arr.indexOf(elem) == pos;
-    });
-};
-
-function getArtistIds(tracks) {
-
-    var ids = [];
-
-    for (i in tracks) {
-        var artists = tracks[i].track.artists;
-        for (j in artists) {
-            ids.push(artists[j].id);
-        }
-    }
-    console.log(ids.length);
-    //ids = unique(ids);
-    console.log(ids.length);
-    return ids;
-};
-
-function getGenres(artistIds, access_token, callback) {
-
-    var genres = [];
-
-    var url = 'https://api.spotify.com/v1/artists?ids=';
-
-    var options = {
+app.get('/foo', function (req, res) {
+  var access_token = req.query.access_token;
+  var options = {
+        url: 'https://api.spotify.com/v1/me/',
         headers: { 'Authorization': 'Bearer ' + access_token },
         json: true
     };
-
-    function loop (callback) {
-
-        console.log(artistIds.length + ' artistIds remaining');
-        options.url = url + artistIds.slice(0, 50).join(',');
-
-        //max ID's per request is 50
-
-        request.get(options, function(error, response, body) {
-            if (error) {
-                console.error('couldn\'t get artists');
-                console.error(error);
-                return;
-            } else {
-                var artists = body.artists;
-                for (i in artists) {
-                    genres = genres.concat(artists[i].genres);
-                }
-                console.log(genres.length + ' genres gotten');
-
-                artistIds = artistIds.slice(50);
-                if (artistIds.length != 0) loop(callback);
-                else callback();
-
-            }
-        });
-    }
-
-    loop(function () {
-        console.log('done getting genres');
-        callback(genres);
-    });
-
-};
-
-function packageForD3 (genres) {
-    var dict = {};
-    for (i in genres) {
-        if (genres[i] in dict) {
-            ++dict[genres[i]];
-        } else {
-            dict[genres[i]] = 1;
-        }
-    }
-
-    var children = [];
-
-    for (key in dict) {
-        children.push({"name": key, "size": dict[key]});
-    }
-
-    var bundle = {"name": "flare", children: children};
-    console.log(bundle);
-    return bundle;
-};
-
-function getTracks(access_token, callback) {
-
-    var tracks = [];
-
-    var options = {
-        url: 'https://api.spotify.com/v1/me/tracks?limit=50',
-        headers: { 'Authorization': 'Bearer ' + access_token },
-        json: true
-    };
-
-    function loop (loop_callback) {
-        request.get(options, function(error, response, body) {
-            if (error) {
-                console.error('couldn\'t get tracks');
-                console.error(error);
-                return;
-            }
-            else {
-                tracks = tracks.concat(body.items);
-                console.log(tracks.length + ' tracks gotten');
-                if (options.url = body.next) loop(loop_callback);
-                else loop_callback();
-            }
-        });
-    };
-
-    loop(function() {
-        console.log('done getting tracks');
-        callback(tracks);
-    });
-
-};
-
-app.get('/fetch', function (req, res) {
-
-    var access_token = req.query.access_token;
-
-    getTracks(access_token, function (tracks) {
-        var artistIds = getArtistIds(tracks);
-        getGenres(artistIds, access_token, function (genres) {
-            console.log('writing response');
-            res.writeHead(200, {"Content-Type": "application/json"});
-            res.end(JSON.stringify(packageForD3(genres)));
-        });
-
-    });
-
+  request.get(options).pipe(res);
 });
 
 var port = process.env.PORT || 8080;
